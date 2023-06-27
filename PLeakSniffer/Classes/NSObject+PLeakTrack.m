@@ -156,7 +156,7 @@
             continue;
         }
         
-        bool isStrong = isStrongProperty(property);
+        bool isStrong = _property_hasGetterOrRetainedIvar(property);
         if (isStrong == false)
         {
             continue;
@@ -223,6 +223,35 @@ SEL property_getSetter(objc_property_t property)
     free(selPtr);
     
     return result;
+}
+
+static BOOL _property_hasGetterOrRetainedIvar(objc_property_t property)
+{
+    if (property == NULL) { return NO; }
+    
+    const char *attrs = property_getAttributes(property);
+    if (attrs == NULL) { return NO; }
+    
+    // Check dynamic
+    const char *dynamic = strstr(attrs, ",D");
+    if (dynamic != NULL) {
+        return NO;
+    }
+    
+    // Check getter
+    const char *getter = strstr(attrs, ",G");
+    if (getter != NULL) {
+        return YES;
+    }
+    
+    // Check retained and ivar
+    const char *retained = strchr(attrs, '&');
+    const char *ivar = strstr(attrs, ",V");
+    
+    if (retained != NULL && ivar != NULL) {
+        return YES;
+    }
+    return NO;
 }
 
 bool isStrongProperty(objc_property_t property)
